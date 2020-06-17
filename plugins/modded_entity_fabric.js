@@ -15,7 +15,62 @@ function loadFabricOptions() {
 const initModelCallback = (tag) => console.log(`mod#tag:${tag}`);
 
 function setTemplate() {
-	Codecs.modded_entity.templates['1.15'] = {
+	const header = fabricOptions.header || '';
+	const entity = fabricOptions.entity || '';
+	const render = fabricOptions.render || '';
+	const members = fabricOptions.members || '';
+	Codecs.modded_entity.templates['1.14 - Fabric'] = {
+		name: '1.14 - Fabric',
+		flip_y: true,
+		integer_size: true,
+		file: 
+		   `// Made with Blockbench %(bb_version)
+			// Exported for Minecraft version 1.14
+			// Paste this class into your mod and generate all required imports
+
+			${header}
+
+			import net.minecraft.client.model.Box;
+			import net.minecraft.client.model.ModelPart;
+			import net.minecraft.client.render.entity.model.EntityModel;
+			import net.minecraft.entity.Entity;
+
+
+			public class %(identifier) extends EntityModel {
+				%(fields)
+
+				public %(identifier)() {
+					textureWidth = %(texture_width);
+					textureHeight = %(texture_height);
+
+					%(content)
+				}
+
+				@Override
+				public void render(Entity entity, float f, float f1, float f2, float f3, float f4, float f5) {
+					${render}
+					%(renderers)
+				}
+
+				public void setRotationAngle(ModelPart bone, float x, float y, float z) {
+						bone.pitch = x;
+						bone.yaw = y;
+						bone.roll = z;
+				}
+
+				${members}
+			}`,
+		field: `private final ModelPart %(bone);`,
+		bone: 
+			 `%(bone) = new ModelPart(this);
+			%(bone).setPivot(%(x), %(y), %(z));
+			?(has_parent)%(parent).addChild(%(bone));
+			?(has_rotation)setRotationAngle(%(bone), %(rx), %(ry), %(rz));
+			%(cubes)`,
+		renderer: `%(bone).render(f5);`,
+		cube: `%(bone).boxes.add(new Box(%(bone), %(uv_x), %(uv_y), %(x), %(y), %(z), %(dx), %(dy), %(dz), %(inflate), %(mirror)));`,
+	};
+	Codecs.modded_entity.templates['1.15 - Fabric'] = {
 		name: '1.15 - Fabric',
 		flip_y: true,
 		integer_size: false,
@@ -23,11 +78,10 @@ function setTemplate() {
 			 `// Made with Blockbench %(bb_version)
 				// Exported for Minecraft version 1.15
 				// Paste this class into your mod and generate all required imports
-				// Test test test
 
-				${fabricOptions.header}
+				${header}
 
-				public class %(identifier) extends EntityModel<${fabricOptions.entity}> {
+				public class %(identifier) extends EntityModel<${entity}> {
 						%(fields)
 						public %(identifier)() {
 								textureWidth = %(texture_width);
@@ -35,12 +89,12 @@ function setTemplate() {
 								%(content)
 						}
 						@Override
-						public void setAngles(${fabricOptions.entity} entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch){
+						public void setAngles(${entity} entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch){
 								//previously the render function, render code was moved to a method below
 						}
 						@Override
 						public void render(MatrixStack matrixStack, VertexConsumer  buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha){
-								${fabricOptions.render}
+								${render}
 								%(renderers)
 						}
 						public void setRotationAngle(ModelPart bone, float x, float y, float z) {
@@ -48,7 +102,7 @@ function setTemplate() {
 								bone.yaw = y;
 								bone.roll = z;
 						}
-						${fabricOptions.members}
+						${members}
 				}`,
 		field: `private final ModelPart %(bone);`,
 		bone: 
