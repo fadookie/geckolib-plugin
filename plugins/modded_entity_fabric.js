@@ -16,7 +16,7 @@ const initModelCallback = (tag) => console.log(`mod#tag:${tag}`);
 
 function setTemplate() {
 	const header = fabricOptions.header || '';
-	const entity = fabricOptions.entity || '';
+	const entity = fabricOptions.entity || 'Entity';
 	const render = fabricOptions.render || '';
 	const members = fabricOptions.members || '';
 	Codecs.modded_entity.templates['1.14 - Fabric'] = {
