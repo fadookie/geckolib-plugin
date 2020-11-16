@@ -4,6 +4,7 @@ import {blockbenchConfig, version} from './package.json';
 import {loadAnimationUI, unloadAnimationUI} from './animationUi';
 import {removeMonkeypatches} from './utils';
 import {loadKeyframeOverrides, unloadKeyframeOverrides} from './keyframe';
+import {registerStatePanel} from './state_machine'
 import geckoSettings, {OBJ_TYPE_BLOCK_ITEM, OBJ_TYPE_OPTIONS, onSettingsChanged} from './settings';
 import codec, {loadCodec, maybeExportItemJson, unloadCodec} from './codec';
 
@@ -27,8 +28,8 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                 loadCodec();
                 loadAnimationUI();
                 loadKeyframeOverrides();
+                registerStatePanel();
                 Interface.Panels.animations.condition = {modes: ['animate', 'state_machine']};
-
                 if (!('state_machine_properties' in Interface.Panels)) {
                     Interface.data.right_bar.push('state_machine_properties');
                     Interface.Panels.state_machine_properties = new Panel({
@@ -62,18 +63,26 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                         }
                     });
                 }
+
+                if (!$("#statemachineeditor").length)
+                    $("#timeline").append(registerStatePanel())
                 BARS.defineActions(new Mode({
                     id: 'state_machine',
                     name: 'State Machine',
                     default_tool: 'move_tool',
                     category: 'navigate',
-                    center_windows: ['preview'],
+                    center_windows: ['preview', 'timeline'],
                     keybind: new Keybind({key: 54}),
                     condition: () => Format.animation_mode,
                     onSelect: () => {
+                        console.log("hiden")
+                        $("#timeline_vue").hide()
+                        $("#statemachineeditor").show()
                         Animator.join()
                     },
                     onUnselect: () => {
+                        $("#timeline_vue").show()
+                        $("#statemachineeditor").hide()
                         Animator.leave()
                     }
                 }))
@@ -134,11 +143,9 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                     }
                 });
                 MenuBar.addAction(button, 'file.1');
-
-
             },
             onunload() {
-                //exportAction.delete();
+                exportAction.delete();
                 exportDisplayAction.delete();
                 button.delete();
                 unloadKeyframeOverrides();
