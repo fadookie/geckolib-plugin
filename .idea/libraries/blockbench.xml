@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="blockbench" type="kotlin.js">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../blockbench" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

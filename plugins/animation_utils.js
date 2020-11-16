@@ -845,93 +845,146 @@ var _package_json__WEBPACK_IMPORTED_MODULE_2___namespace = /*#__PURE__*/__webpac
 
 const SUPPORTED_BB_VERSION_RANGE = `${_package_json__WEBPACK_IMPORTED_MODULE_2__["blockbenchConfig"].min_version} - ${_package_json__WEBPACK_IMPORTED_MODULE_2__["blockbenchConfig"].max_version}`;
 if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_functions_coerce__WEBPACK_IMPORTED_MODULE_0___default()(Blockbench.version), SUPPORTED_BB_VERSION_RANGE)) {
-  alert(`GeckoLib Animation Utils currently only supports Blockbench ${SUPPORTED_BB_VERSION_RANGE}. Please ensure you are using this version of Blockbench to avoid bugs and undefined behavior.`);
+    alert(`GeckoLib Animation Utils currently only supports Blockbench ${SUPPORTED_BB_VERSION_RANGE}. Please ensure you are using this version of Blockbench to avoid bugs and undefined behavior.`);
 }
 
 (function () {
-  let exportAction;
-  let exportDisplayAction;
-  let button;
+    let exportAction;
+    let exportDisplayAction;
+    let button;
 
-  Plugin.register("animation_utils", Object.assign(
-    {},
-    _package_json__WEBPACK_IMPORTED_MODULE_2__["blockbenchConfig"],
-    {
-      name: _package_json__WEBPACK_IMPORTED_MODULE_2__["blockbenchConfig"].title,
-      version: _package_json__WEBPACK_IMPORTED_MODULE_2__["version"],
-      onload() {
-        Object(_codec__WEBPACK_IMPORTED_MODULE_7__["loadCodec"])();
-        Object(_animationUi__WEBPACK_IMPORTED_MODULE_3__["loadAnimationUI"])();
-        Object(_keyframe__WEBPACK_IMPORTED_MODULE_5__["loadKeyframeOverrides"])();
+    Plugin.register("animation_utils", Object.assign(
+        {},
+        _package_json__WEBPACK_IMPORTED_MODULE_2__["blockbenchConfig"],
+        {
+            name: _package_json__WEBPACK_IMPORTED_MODULE_2__["blockbenchConfig"].title,
+            version: _package_json__WEBPACK_IMPORTED_MODULE_2__["version"],
+            onload() {
+                Object(_codec__WEBPACK_IMPORTED_MODULE_7__["loadCodec"])();
+                Object(_animationUi__WEBPACK_IMPORTED_MODULE_3__["loadAnimationUI"])();
+                Object(_keyframe__WEBPACK_IMPORTED_MODULE_5__["loadKeyframeOverrides"])();
+                Interface.Panels.animations.condition = {modes: ['animate', 'state_machine']};
 
-        exportAction = new Action({
-          id: "export_geckolib_model",
-          name: "Export GeckoLib Model",
-          icon: "archive",
-          description:
-            "Export your java animated model as a model for GeckoLib.",
-          category: "file",
-          condition: () => Format.id === "animated_entity_model",
-          click: function () {
-            _codec__WEBPACK_IMPORTED_MODULE_7__["default"].export();
-          },
-        });
-        MenuBar.addAction(exportAction, "file.export");
+                if (!('state_machine_properties' in Interface.Panels)) {
+                    Interface.data.right_bar.push('state_machine_properties');
+                    Interface.Panels.state_machine_properties = new Panel({
+                        id: 'state_machine_properties',
+                        icon: 'fas.fa-stream',
+                        condition: {modes: ['state_machine']},
+                        growable: true,
+                        name: "State Machine Properties",
+                        toolbars: {},
+                        component: {
+                            name: 'panel-placeholders',
+                            data() {
+                                return {
+                                    text: ''
+                                }
+                            },
+                            template: `
+                        <div style="flex-grow: 1; display: flex; flex-direction: column;">
+                            <p>{{ tl('panel.variable_placeholders.info') }}</p>
+                            <vue-prism-editor
+                                id="var_placeholder_area"
+                                class="molang_input dark_bordered tab_target"
+                                v-model="text"
+                                language="molang"
+                                :line-numbers="false"
+                                style="flex-grow: 1;"
+                                onkeyup="Animator.preview()"
+                            />
+                        </div>
+		                `
+                        }
+                    });
+                }
+                BARS.defineActions(new Mode({
+                    id: 'state_machine',
+                    name: 'State Machine',
+                    default_tool: 'move_tool',
+                    category: 'navigate',
+                    center_windows: ['preview'],
+                    keybind: new Keybind({key: 54}),
+                    condition: () => Format.animation_mode,
+                    onSelect: () => {
+                        Animator.join()
+                    },
+                    onUnselect: () => {
+                        Animator.leave()
+                    }
+                }))
+                Modes.vue.$forceUpdate();
 
-        exportDisplayAction = new Action({
-          id: "export_geckolib_display",
-          name: "Export GeckoLib Display Settings",
-          icon: "icon-bb_interface",
-          description:
-            "Export your java animated model display settings for GeckoLib.",
-          category: "file",
-          condition: () => Format.id === "animated_entity_model" && _settings__WEBPACK_IMPORTED_MODULE_6__["default"].objectType === _settings__WEBPACK_IMPORTED_MODULE_6__["OBJ_TYPE_BLOCK_ITEM"],
-          click: _codec__WEBPACK_IMPORTED_MODULE_7__["maybeExportItemJson"],
-        });
-        MenuBar.addAction(exportDisplayAction, "file.export");
+                exportAction = new Action({
+                    id: "export_geckolib_model",
+                    name: "Export GeckoLib Model",
+                    icon: "archive",
+                    description:
+                        "Export your java animated model as a model for GeckoLib.",
+                    category: "file",
+                    condition: () => Format.id === "animated_entity_model",
+                    click: function () {
+                        _codec__WEBPACK_IMPORTED_MODULE_7__["default"].export();
+                    },
+                });
+                MenuBar.addAction(exportAction, "file.export");
 
-        button = new Action('gecko_settings', {
-          name: 'GeckoLib Model Settings...',
-          description: 'Configure animated model.',
-          icon: 'info',
-          condition: () => Format.id === "animated_entity_model",
-          click: function () {
-            var dialog = new Dialog({
-              id: 'project',
-              title: 'GeckoLib Model Settings',
-              width: 540,
-              lines: [`<b class="tl"><a href="https://github.com/bernie-g/geckolib">GeckoLib</a> Animation Utils v${_package_json__WEBPACK_IMPORTED_MODULE_2__["version"]}</b>`],
-              form: {
-                objectType: {label: 'Object Type', type: 'select', default: _settings__WEBPACK_IMPORTED_MODULE_6__["default"].objectType, options: _settings__WEBPACK_IMPORTED_MODULE_6__["OBJ_TYPE_OPTIONS"]},
-                // modSDK: {label: 'Modding SDK', type: 'select', default: geckoSettings.modSDK, options: MOD_SDK_OPTIONS},
-                // entityType: {label: 'Entity Type', value: geckoSettings.entityType},
-                // javaPackage: {label: 'Java Package', value: geckoSettings.javaPackage},
-                // animFileNamespace: {label: 'Animation File Namespace', value: geckoSettings.animFileNamespace},
-                // animFilePath: {label: 'Animation File Path', value: geckoSettings.animFilePath},
-              },
-              onConfirm: function(formResult) {
-                Object.assign(_settings__WEBPACK_IMPORTED_MODULE_6__["default"], formResult);
-                Object(_settings__WEBPACK_IMPORTED_MODULE_6__["onSettingsChanged"])();
-                dialog.hide()
-              }
-            })
-            dialog.show()
-          }
-        });
-        MenuBar.addAction(button, 'file.1');
-      },
-      onunload() {
-        exportAction.delete();
-        exportDisplayAction.delete();
-        button.delete();
-        Object(_keyframe__WEBPACK_IMPORTED_MODULE_5__["unloadKeyframeOverrides"])();
-        Object(_animationUi__WEBPACK_IMPORTED_MODULE_3__["unloadAnimationUI"])();
-        Object(_codec__WEBPACK_IMPORTED_MODULE_7__["unloadCodec"])();
-        Object(_utils__WEBPACK_IMPORTED_MODULE_4__["removeMonkeypatches"])();
-        console.clear(); // eslint-disable-line no-console
-      },
-    }
-  ));
+                exportDisplayAction = new Action({
+                    id: "export_geckolib_display",
+                    name: "Export GeckoLib Display Settings",
+                    icon: "icon-bb_interface",
+                    description:
+                        "Export your java animated model display settings for GeckoLib.",
+                    category: "file",
+                    condition: () => Format.id === "animated_entity_model" && _settings__WEBPACK_IMPORTED_MODULE_6__["default"].objectType === _settings__WEBPACK_IMPORTED_MODULE_6__["OBJ_TYPE_BLOCK_ITEM"],
+                    click: _codec__WEBPACK_IMPORTED_MODULE_7__["maybeExportItemJson"],
+                });
+                MenuBar.addAction(exportDisplayAction, "file.export");
+
+                button = new Action('gecko_settings', {
+                    name: 'GeckoLib Model Settings...',
+                    description: 'Configure animated model.',
+                    icon: 'info',
+                    condition: () => Format.id === "animated_entity_model",
+                    click: function () {
+                        var dialog = new Dialog({
+                            id: 'project',
+                            title: 'GeckoLib Model Settings',
+                            width: 540,
+                            lines: [`<b class="tl"><a href="https://github.com/bernie-g/geckolib">GeckoLib</a> Animation Utils v${_package_json__WEBPACK_IMPORTED_MODULE_2__["version"]}</b>`],
+                            form: {
+                                objectType: {
+                                    label: 'Object Type',
+                                    type: 'select',
+                                    default: _settings__WEBPACK_IMPORTED_MODULE_6__["default"].objectType,
+                                    options: _settings__WEBPACK_IMPORTED_MODULE_6__["OBJ_TYPE_OPTIONS"]
+                                },
+                            },
+                            onConfirm: function (formResult) {
+                                Object.assign(_settings__WEBPACK_IMPORTED_MODULE_6__["default"], formResult);
+                                Object(_settings__WEBPACK_IMPORTED_MODULE_6__["onSettingsChanged"])();
+                                dialog.hide()
+                            }
+                        })
+                        dialog.show()
+                    }
+                });
+                MenuBar.addAction(button, 'file.1');
+
+
+            },
+            onunload() {
+                //exportAction.delete();
+                exportDisplayAction.delete();
+                button.delete();
+                Object(_keyframe__WEBPACK_IMPORTED_MODULE_5__["unloadKeyframeOverrides"])();
+                Object(_animationUi__WEBPACK_IMPORTED_MODULE_3__["unloadAnimationUI"])();
+                Object(_codec__WEBPACK_IMPORTED_MODULE_7__["unloadCodec"])();
+                Object(_utils__WEBPACK_IMPORTED_MODULE_4__["removeMonkeypatches"])();
+                console.clear(); // eslint-disable-line no-console
+            },
+        }
+    ));
 })();
 
 
@@ -1003,7 +1056,6 @@ function keyframeGetArray() {
     result = { vector: result, easing };
     if (Object(_utils__WEBPACK_IMPORTED_MODULE_0__["hasArgs"])(easing)) result.easingArgs = easingArgs;
   }
-  console.log('keyframeGetArray arguments:', arguments, 'this:', this, 'result:', result);
   return result;
 }
 
@@ -1014,13 +1066,11 @@ function keyframeGetUndoCopy() {
     Object.assign(result, { easing });
     if (Object(_utils__WEBPACK_IMPORTED_MODULE_0__["hasArgs"])(easing)) result.easingArgs = easingArgs;
   }
-  console.log('keyframeGetUndoCopy arguments:', arguments, 'this:', this, 'result:', result);
   return result;
 }
 
 function keyframeExtend(dataIn) {
   const data = Object.assign({}, dataIn);
-  console.log('keyframeExtend 1 arguments:', arguments);
   if (Format.id === "animated_entity_model") {
     if (typeof data.values === 'object') {
       if (data.values.easing !== undefined) {
@@ -1043,7 +1093,6 @@ function keyframeExtend(dataIn) {
     }
   }
   const result = _utils__WEBPACK_IMPORTED_MODULE_0__["Original"].get(Keyframe).extend.apply(this, arguments);
-  console.log('keyframeExtend 2 arguments:', arguments, 'this:', this, 'result:', result);
   return result;
 }
 
@@ -1052,6 +1101,140 @@ function reverseKeyframesCondition() {
   // console.log('reverseKeyframesCondition original:',Original.get(BarItems.reverse_keyframes).condition(), 'res:', res);
   return res;
 }
+
+function loadFile(file, animation_filter) {
+  var json = file.json || autoParseJSON(file.content);
+  let path = file.path;
+  let new_animations = [];
+  if (json && typeof json.animations === 'object') {
+    for (var ani_name in json.animations) {
+      if (animation_filter && !animation_filter.includes(ani_name)) continue;
+      //Animation
+      var a = json.animations[ani_name]
+      var animation = new Animation({
+        name: ani_name,
+        path,
+        loop: a.loop && (a.loop == 'hold_on_last_frame' ? 'hold' : 'loop'),
+        override: a.override_previous_animation,
+        anim_time_update: (typeof a.anim_time_update == 'string'
+            ? a.anim_time_update.replace(/;(?!$)/, ';\n')
+            : a.anim_time_update),
+        blend_weight: (typeof a.blend_weight == 'string'
+            ? a.blend_weight.replace(/;(?!$)/, ';\n')
+            : a.blend_weight),
+        length: a.animation_length
+      }).add()
+      //Bones
+      if (a.bones) {
+        function getKeyframeDataPoints(source) {
+          if (source instanceof Array) {
+            return [{
+              x: source[0],
+              y: source[1],
+              z: source[2],
+            }]
+          } else if (['number', 'string'].includes(typeof source)) {
+            return [{
+              x: source, y: source, z: source
+            }]
+          } else if (typeof source == 'object') {
+            let points = [];
+            if (source.pre) {
+              points.push(getKeyframeDataPoints(source.pre)[0])
+            }
+            if (source.post) {
+              points.push(getKeyframeDataPoints(source.post)[0])
+            }
+            return points;
+          }
+        }
+        for (var bone_name in a.bones) {
+          var b = a.bones[bone_name]
+          let lowercase_bone_name = bone_name.toLowerCase();
+          var group = Group.all.find(group => group.name.toLowerCase() == lowercase_bone_name)
+          let uuid = group ? group.uuid : guid();
+
+          var ba = new BoneAnimator(uuid, animation, bone_name);
+          animation.animators[uuid] = ba;
+          //Channels
+          for (var channel in b) {
+            if (Animator.possible_channels[channel]) {
+              if (typeof b[channel] === 'string' || typeof b[channel] === 'number' || b[channel] instanceof Array) {
+                ba.addKeyframe({
+                  time: 0,
+                  channel,
+                  data_points: getKeyframeDataPoints(b[channel]),
+                })
+              } else if (typeof b[channel] === 'object') {
+                for (var timestamp in b[channel]) {
+                  ba.addKeyframe({
+                    time: parseFloat(timestamp),
+                    channel,
+                    interpolation: b[channel][timestamp].lerp_mode,
+                    data_points: getKeyframeDataPoints(b[channel][timestamp]),
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+      if (a.sound_effects) {
+        if (!animation.animators.effects) {
+          animation.animators.effects = new EffectAnimator(animation);
+        }
+        for (var timestamp in a.sound_effects) {
+          var sounds = a.sound_effects[timestamp];
+          if (sounds instanceof Array === false) sounds = [sounds];
+          animation.animators.effects.addKeyframe({
+            channel: 'sound',
+            time: parseFloat(timestamp),
+            data_points: sounds
+          })
+        }
+      }
+      if (a.particle_effects) {
+        if (!animation.animators.effects) {
+          animation.animators.effects = new EffectAnimator(animation);
+        }
+        for (var timestamp in a.particle_effects) {
+          var particles = a.particle_effects[timestamp];
+          if (particles instanceof Array === false) particles = [particles];
+          particles.forEach(particle => {
+            if (particle) particle.script = particle.pre_effect_script;
+          })
+          animation.animators.effects.addKeyframe({
+            channel: 'particle',
+            time: parseFloat(timestamp),
+            data_points: particles
+          })
+        }
+      }
+      if (a.timeline) {
+        if (!animation.animators.effects) {
+          animation.animators.effects = new EffectAnimator(animation);
+        }
+        for (var timestamp in a.timeline) {
+          var entry = a.timeline[timestamp];
+          var script = entry instanceof Array ? entry.join('\n') : entry;
+          animation.animators.effects.addKeyframe({
+            channel: 'timeline',
+            time: parseFloat(timestamp),
+            data_points: [{script}]
+          })
+        }
+      }
+      animation.calculateSnappingFromKeyframes();
+      if (!Animation.selected && Animator.open) {
+        animation.select()
+      }
+      new_animations.push(animation)
+    }
+  }
+  return new_animations
+}
+
+
 
 //#endregion Keyframe Mixins
 
@@ -8027,7 +8210,7 @@ module.exports = function(module) {
 /*! exports provided: name, version, private, description, main, scripts, author, license, blockbenchConfig, sideEffects, devDependencies, dependencies, default */
 /***/ (function(module) {
 
-module.exports = JSON.parse("{\"name\":\"animation_utils\",\"version\":\"3.0.0-beta.0\",\"private\":true,\"description\":\"GeckoLib Animation Utils\",\"main\":\"index.js\",\"scripts\":{\"build\":\"webpack && node scripts/updateManifest.js\",\"start\":\"webpack --watch --mode=development\",\"lint\":\"eslint .\",\"lint:fix\":\"eslint --fix .\",\"pretest\":\"npm run lint\",\"test\":\"echo \\\"Error: no test specified\\\" && exit 1\"},\"author\":\"Eliot Lash, Gecko\",\"license\":\"MIT\",\"blockbenchConfig\":{\"title\":\"GeckoLib Animation Utils\",\"author\":\"Eliot Lash, Gecko\",\"icon\":\"movie_filter\",\"description\":\"This plugin lets you create animated java entities with GeckoLib. Learn about GeckoLib here: https://github.com/bernie-g/geckolib\",\"min_version\":\"3.7.0\",\"max_version\":\"3.7.99\",\"variant\":\"both\"},\"sideEffects\":[\"./index.js\"],\"devDependencies\":{\"eol\":\"0.9.1\",\"eslint\":\"7.7.0\",\"webpack\":\"4.43.0\",\"webpack-cli\":\"3.3.12\"},\"dependencies\":{\"lodash\":\"4.17.19\",\"semver\":\"7.3.2\"}}");
+module.exports = JSON.parse("{\"name\":\"animation_utils\",\"version\":\"3.0.0-beta.0\",\"private\":true,\"description\":\"GeckoLib Animation Utils\",\"main\":\"index.js\",\"scripts\":{\"build\":\"webpack && node scripts/updateManifest.js\",\"start\":\"webpack --watch --mode=development --inspect=7000\",\"lint\":\"eslint .\",\"lint:fix\":\"eslint --fix .\",\"pretest\":\"npm run lint\",\"test\":\"echo \\\"Error: no test specified\\\" && exit 1\"},\"author\":\"Eliot Lash, Gecko\",\"license\":\"MIT\",\"blockbenchConfig\":{\"title\":\"GeckoLib Animation Utils\",\"author\":\"Eliot Lash, Gecko\",\"icon\":\"movie_filter\",\"description\":\"This plugin lets you create animated java entities with GeckoLib. Learn about GeckoLib here: https://github.com/bernie-g/geckolib\",\"min_version\":\"3.7.0\",\"max_version\":\"3.7.99\",\"variant\":\"both\"},\"sideEffects\":[\"./index.js\"],\"devDependencies\":{\"eol\":\"0.9.1\",\"eslint\":\"7.7.0\",\"webpack\":\"4.43.0\",\"webpack-cli\":\"3.3.12\"},\"dependencies\":{\"lodash\":\"4.17.19\",\"semver\":\"7.3.2\"}}");
 
 /***/ }),
 
