@@ -1,24 +1,37 @@
 import {LGraph, LGraphCanvas, LiteGraph} from "litegraph.js";
 
-(function(){
-    var graph = new LGraph();
+export let canvas;
+export let graph;
+export let position;
 
-    var canvas = new LGraphCanvas("#editor", graph);
+export function startGraph() {
+    graph = new LGraph();
 
-    var node_const = LiteGraph.createNode("basic/const");
-    node_const.pos = [200,200];
-    graph.add(node_const);
-    node_const.setValue(4.5);
+    canvas = new LGraphCanvas("#editor", graph);
+    canvas.renderInfo = () => {
+    };
+    canvas.allow_searchbox = false;
 
-    var node_watch = LiteGraph.createNode("basic/watch");
-    node_watch.pos = [700,200];
-    graph.add(node_watch);
+    function StateNode() {
+        this.addInput("Input", LiteGraph.ACTION);
+        this.addOutput("Transition", LiteGraph.EVENT);
+        this.serialize_widgets = true;
+    }
+    StateNode.title = "Animation"
 
-    node_const.connect(0, node_watch, 0 );
-
+    LiteGraph.registerNodeType("animation/state", StateNode);
     graph.start()
 
-})();
+    StateNode.prototype.onConnectInput = function (inputIndex, type, outputSlot) {
+        console.log(inputIndex, type, outputSlot)
+        return true;
+    }
+    /*$("#editor").on("contextmenu", (event) => {
+        console.log(event)
+        stateMenu.show(event)
+        position = [event.offsetX, event.offsetY]
+    })*/
+}
 
 export function registerStatePanel() {
     return `<div id="statemachineeditor">
@@ -26,3 +39,8 @@ export function registerStatePanel() {
 </div>
     `
 }
+
+const stateMenu = new Menu([
+    'create_state_node',
+    'create_transition_node'
+]);

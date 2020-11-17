@@ -835,6 +835,9 @@ var _package_json__WEBPACK_IMPORTED_MODULE_2___namespace = /*#__PURE__*/__webpac
 /* harmony import */ var _state_machine__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./state_machine */ "./state_machine.js");
 /* harmony import */ var _settings__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./settings */ "./settings.js");
 /* harmony import */ var _codec__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./codec */ "./codec.js");
+/* harmony import */ var litegraph_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! litegraph.js */ "./node_modules/litegraph.js/build/litegraph.js");
+/* harmony import */ var litegraph_js__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(litegraph_js__WEBPACK_IMPORTED_MODULE_9__);
+
 
 
 
@@ -851,6 +854,8 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
 }
 
 (function () {
+    let createStateAction;
+    let createTransitionAction;
     let exportAction;
     let exportDisplayAction;
     let button;
@@ -902,7 +907,7 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
                 }
 
                 if (!$("#statemachineeditor").length)
-                    $("#timeline").append(Object(_state_machine__WEBPACK_IMPORTED_MODULE_6__["registerStatePanel"])())
+                    $("#timeline").prepend(Object(_state_machine__WEBPACK_IMPORTED_MODULE_6__["registerStatePanel"])())
                 BARS.defineActions(new Mode({
                     id: 'state_machine',
                     name: 'State Machine',
@@ -912,19 +917,20 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
                     keybind: new Keybind({key: 54}),
                     condition: () => Format.animation_mode,
                     onSelect: () => {
-                        console.log("hiden")
+                        Interface.data.timeline_height = 600;
                         $("#timeline_vue").hide()
                         $("#statemachineeditor").show()
                         Animator.join()
                     },
                     onUnselect: () => {
+                        Interface.data.timeline_height = 250;
                         $("#timeline_vue").show()
                         $("#statemachineeditor").hide()
                         Animator.leave()
                     }
                 }))
+                Object(_state_machine__WEBPACK_IMPORTED_MODULE_6__["startGraph"])();
                 Modes.vue.$forceUpdate();
-
                 exportAction = new Action({
                     id: "export_geckolib_model",
                     name: "Export GeckoLib Model",
@@ -937,6 +943,31 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
                         _codec__WEBPACK_IMPORTED_MODULE_8__["default"].export();
                     },
                 });
+                /*createStateAction = new Action({
+                    id: "create_state_node",
+                    name: "Create Animation Node",
+                    icon: "archive",
+                    description:
+                        "Create an animation node",
+                    condition: () => Modes.selected.id === "state_machine",
+                    click: function () {
+                        let node_const = LiteGraph.createNode("animation/state");
+                        node_const.pos = position;
+                        graph.add(node_const);
+                        console.log("node")
+                    },
+                });
+                createTransitionAction = new Action({
+                    id: "create_transition_node",
+                    name: "Create Transition Node",
+                    icon: "archive",
+                    description:
+                        "Create an transition node",
+                    condition: () => Modes.selected.id === "state_machine",
+                    click: function () {
+                        //codec.export();
+                    },
+                });*/
                 MenuBar.addAction(exportAction, "file.export");
 
                 exportDisplayAction = new Action({
@@ -982,6 +1013,8 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
                 MenuBar.addAction(button, 'file.1');
             },
             onunload() {
+                createStateAction.delete();
+                createTransitionAction.delete();
                 exportAction.delete();
                 exportDisplayAction.delete();
                 button.delete();
@@ -989,6 +1022,7 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
                 Object(_animationUi__WEBPACK_IMPORTED_MODULE_3__["unloadAnimationUI"])();
                 Object(_codec__WEBPACK_IMPORTED_MODULE_8__["unloadCodec"])();
                 Object(_utils__WEBPACK_IMPORTED_MODULE_4__["removeMonkeypatches"])();
+                $("#statemachineeditor").remove();
                 console.clear(); // eslint-disable-line no-console
             },
         }
@@ -36213,35 +36247,52 @@ function onSettingsChanged() {
 /*!**************************!*\
   !*** ./state_machine.js ***!
   \**************************/
-/*! exports provided: registerStatePanel */
+/*! exports provided: canvas, graph, position, startGraph, registerStatePanel */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "canvas", function() { return canvas; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "graph", function() { return graph; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "position", function() { return position; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "startGraph", function() { return startGraph; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "registerStatePanel", function() { return registerStatePanel; });
 /* harmony import */ var litegraph_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! litegraph.js */ "./node_modules/litegraph.js/build/litegraph.js");
 /* harmony import */ var litegraph_js__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(litegraph_js__WEBPACK_IMPORTED_MODULE_0__);
 
 
-(function(){
-    var graph = new litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LGraph"]();
+let canvas;
+let graph;
+let position;
 
-    var canvas = new litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LGraphCanvas"]("#editor", graph);
+function startGraph() {
+    graph = new litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LGraph"]();
 
-    var node_const = litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LiteGraph"].createNode("basic/const");
-    node_const.pos = [200,200];
-    graph.add(node_const);
-    node_const.setValue(4.5);
+    canvas = new litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LGraphCanvas"]("#editor", graph);
+    canvas.renderInfo = () => {
+    };
+    canvas.allow_searchbox = false;
 
-    var node_watch = litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LiteGraph"].createNode("basic/watch");
-    node_watch.pos = [700,200];
-    graph.add(node_watch);
+    function StateNode() {
+        this.addInput("Input", litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LiteGraph"].ACTION);
+        this.addOutput("Transition", litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LiteGraph"].EVENT);
+        this.serialize_widgets = true;
+    }
+    StateNode.title = "Animation"
 
-    node_const.connect(0, node_watch, 0 );
-
+    litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LiteGraph"].registerNodeType("animation/state", StateNode);
     graph.start()
 
-})();
+    StateNode.prototype.onConnectInput = function (inputIndex, type, outputSlot) {
+        console.log(inputIndex, type, outputSlot)
+        return true;
+    }
+    /*$("#editor").on("contextmenu", (event) => {
+        console.log(event)
+        stateMenu.show(event)
+        position = [event.offsetX, event.offsetY]
+    })*/
+}
 
 function registerStatePanel() {
     return `<div id="statemachineeditor">
@@ -36249,6 +36300,11 @@ function registerStatePanel() {
 </div>
     `
 }
+
+const stateMenu = new Menu([
+    'create_state_node',
+    'create_transition_node'
+]);
 
 /***/ }),
 

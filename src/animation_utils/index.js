@@ -4,9 +4,10 @@ import {blockbenchConfig, version} from './package.json';
 import {loadAnimationUI, unloadAnimationUI} from './animationUi';
 import {removeMonkeypatches} from './utils';
 import {loadKeyframeOverrides, unloadKeyframeOverrides} from './keyframe';
-import {registerStatePanel} from './state_machine'
+import {canvas, graph, position, registerStatePanel, startGraph} from './state_machine'
 import geckoSettings, {OBJ_TYPE_BLOCK_ITEM, OBJ_TYPE_OPTIONS, onSettingsChanged} from './settings';
 import codec, {loadCodec, maybeExportItemJson, unloadCodec} from './codec';
+import {LiteGraph} from "litegraph.js";
 
 const SUPPORTED_BB_VERSION_RANGE = `${blockbenchConfig.min_version} - ${blockbenchConfig.max_version}`;
 if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANGE)) {
@@ -14,6 +15,8 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
 }
 
 (function () {
+    let createStateAction;
+    let createTransitionAction;
     let exportAction;
     let exportDisplayAction;
     let button;
@@ -65,7 +68,7 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                 }
 
                 if (!$("#statemachineeditor").length)
-                    $("#timeline").append(registerStatePanel())
+                    $("#timeline").prepend(registerStatePanel())
                 BARS.defineActions(new Mode({
                     id: 'state_machine',
                     name: 'State Machine',
@@ -75,19 +78,20 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                     keybind: new Keybind({key: 54}),
                     condition: () => Format.animation_mode,
                     onSelect: () => {
-                        console.log("hiden")
+                        Interface.data.timeline_height = 600;
                         $("#timeline_vue").hide()
                         $("#statemachineeditor").show()
                         Animator.join()
                     },
                     onUnselect: () => {
+                        Interface.data.timeline_height = 250;
                         $("#timeline_vue").show()
                         $("#statemachineeditor").hide()
                         Animator.leave()
                     }
                 }))
+                startGraph();
                 Modes.vue.$forceUpdate();
-
                 exportAction = new Action({
                     id: "export_geckolib_model",
                     name: "Export GeckoLib Model",
@@ -100,6 +104,31 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                         codec.export();
                     },
                 });
+                /*createStateAction = new Action({
+                    id: "create_state_node",
+                    name: "Create Animation Node",
+                    icon: "archive",
+                    description:
+                        "Create an animation node",
+                    condition: () => Modes.selected.id === "state_machine",
+                    click: function () {
+                        let node_const = LiteGraph.createNode("animation/state");
+                        node_const.pos = position;
+                        graph.add(node_const);
+                        console.log("node")
+                    },
+                });
+                createTransitionAction = new Action({
+                    id: "create_transition_node",
+                    name: "Create Transition Node",
+                    icon: "archive",
+                    description:
+                        "Create an transition node",
+                    condition: () => Modes.selected.id === "state_machine",
+                    click: function () {
+                        //codec.export();
+                    },
+                });*/
                 MenuBar.addAction(exportAction, "file.export");
 
                 exportDisplayAction = new Action({
@@ -145,6 +174,8 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                 MenuBar.addAction(button, 'file.1');
             },
             onunload() {
+                createStateAction.delete();
+                createTransitionAction.delete();
                 exportAction.delete();
                 exportDisplayAction.delete();
                 button.delete();
@@ -152,6 +183,7 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                 unloadAnimationUI();
                 unloadCodec();
                 removeMonkeypatches();
+                $("#statemachineeditor").remove();
                 console.clear(); // eslint-disable-line no-console
             },
         }
