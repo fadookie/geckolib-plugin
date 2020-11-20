@@ -38,12 +38,10 @@
     "webpack-cli": "3.3.12"
   },
   "dependencies": {
+    "float": "^1.0.2",
     "litegraph.js": "^0.7.8",
     "lodash": "4.17.19",
-    "regenerator-runtime": "^0.13.7",
-    "rete": "^1.4.5-rc.1",
-    "rete-connection-plugin": "^0.9.0",
-    "rete-vue-render-plugin": "^0.5.0",
+    "p5": "^1.1.9",
     "semver": "7.3.2"
   }
 }

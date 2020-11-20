@@ -1,31 +1,28 @@
 import {LGraph, LGraphCanvas, LiteGraph} from "litegraph.js";
+import AnimationClip from "./components/animationClip";
+import AnimationBlend2 from "./components/AnimationBlend2";
 
 export let canvas;
 export let graph;
 export let position;
 
 export function startGraph() {
+    console.log("canvas", canvas)
     graph = new LGraph();
 
     canvas = new LGraphCanvas("#editor", graph);
     canvas.renderInfo = () => {
     };
+    canvas.prompt = () => {};
     canvas.allow_searchbox = false;
-
-    function StateNode() {
-        this.addInput("Input", LiteGraph.ACTION);
-        this.addOutput("Transition", LiteGraph.EVENT);
-        this.serialize_widgets = true;
-    }
-    StateNode.title = "Animation"
-
-    LiteGraph.registerNodeType("animation/state", StateNode);
     graph.start()
+    LiteGraph.registerNodeType("geckolib/AnimationClip", AnimationClip);
+    LiteGraph.registerNodeType("geckolib/Blend2", AnimationBlend2);
 
-    StateNode.prototype.onConnectInput = function (inputIndex, type, outputSlot) {
-        console.log(inputIndex, type, outputSlot)
-        return true;
-    }
+    var node_const = LiteGraph.createNode("graph/output");
+    node_const.pos = [200,200];
+    graph.add(node_const);
+
     $("#editor").on("contextmenu", (event) => {
         stateMenu.show(event)
         position = [event.offsetX, event.offsetY]
@@ -36,7 +33,10 @@ export function startGraph() {
         position = [event.offsetX, event.offsetY]
     })
     console.log("added listeners")
-    canvas.getCanvasWindow().addEventListener("keydown", canvas._key_callback, true)
+    canvas.getCanvasWindow().addEventListener("keydown", event => {
+        console.log(event);
+        canvas._key_callback(event)
+    }, true)
 }
 
 export function registerStatePanel() {

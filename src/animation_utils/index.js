@@ -4,7 +4,7 @@ import {blockbenchConfig, version} from './package.json';
 import {loadAnimationUI, unloadAnimationUI} from './animationUi';
 import {removeMonkeypatches} from './utils';
 import {loadKeyframeOverrides, unloadKeyframeOverrides} from './keyframe';
-import {canvas, graph, position, registerStatePanel, startGraph} from './state_machine'
+import {canvas, graph, position, registerStatePanel, startGraph} from './stateMachine'
 import geckoSettings, {OBJ_TYPE_BLOCK_ITEM, OBJ_TYPE_OPTIONS, onSettingsChanged} from './settings';
 import codec, {loadCodec, maybeExportItemJson, unloadCodec} from './codec';
 import {LiteGraph} from "litegraph.js";
@@ -71,7 +71,8 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                     $("#timeline").prepend(registerStatePanel())
                     startGraph();
                 }
-                $("#statemachineeditor").hide()
+                if (Modes.selected.id !== "state_machine")
+                    $("#statemachineeditor").hide()
                 console.log("Loaded Geckolib")
                 BARS.defineActions(new Mode({
                     id: 'state_machine',
@@ -115,7 +116,7 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                         "Create an animation node",
                     condition: () => Modes.selected.id === "state_machine",
                     click: function () {
-                        let node_const = LiteGraph.createNode("animation/state");
+                        let node_const = LiteGraph.createNode("geckolib/AnimationClip");
                         node_const.pos = position;
                         graph.add(node_const);
                         console.log("node")
@@ -188,6 +189,7 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                 removeMonkeypatches();
                 $("#statemachineeditor").remove();
                 canvas.getCanvasWindow().document.removeEventListener("keydown", canvas._key_callback)
+                this.canvas = null;
                 console.clear(); // eslint-disable-line no-console
             },
         }
