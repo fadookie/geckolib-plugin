@@ -26,11 +26,17 @@ export function startGraph() {
         console.log(inputIndex, type, outputSlot)
         return true;
     }
-    /*$("#editor").on("contextmenu", (event) => {
-        console.log(event)
+    $("#editor").on("contextmenu", (event) => {
         stateMenu.show(event)
         position = [event.offsetX, event.offsetY]
-    })*/
+    })
+
+    $("#editor").on("click", (event) => {
+        stateMenu.hide()
+        position = [event.offsetX, event.offsetY]
+    })
+    console.log("added listeners")
+    canvas.getCanvasWindow().addEventListener("keydown", canvas._key_callback, true)
 }
 
 export function registerStatePanel() {

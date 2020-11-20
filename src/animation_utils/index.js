@@ -67,8 +67,12 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                     });
                 }
 
-                if (!$("#statemachineeditor").length)
+                if (!$("#statemachineeditor").length) {
                     $("#timeline").prepend(registerStatePanel())
+                    startGraph();
+                }
+                $("#statemachineeditor").hide()
+                console.log("Loaded Geckolib")
                 BARS.defineActions(new Mode({
                     id: 'state_machine',
                     name: 'State Machine',
@@ -90,7 +94,6 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                         Animator.leave()
                     }
                 }))
-                startGraph();
                 Modes.vue.$forceUpdate();
                 exportAction = new Action({
                     id: "export_geckolib_model",
@@ -104,7 +107,7 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                         codec.export();
                     },
                 });
-                /*createStateAction = new Action({
+                createStateAction = new Action({
                     id: "create_state_node",
                     name: "Create Animation Node",
                     icon: "archive",
@@ -128,7 +131,7 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                     click: function () {
                         //codec.export();
                     },
-                });*/
+                });
                 MenuBar.addAction(exportAction, "file.export");
 
                 exportDisplayAction = new Action({
@@ -184,6 +187,7 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                 unloadCodec();
                 removeMonkeypatches();
                 $("#statemachineeditor").remove();
+                canvas.getCanvasWindow().document.removeEventListener("keydown", canvas._key_callback)
                 console.clear(); // eslint-disable-line no-console
             },
         }

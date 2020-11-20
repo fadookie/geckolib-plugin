@@ -906,8 +906,12 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
                     });
                 }
 
-                if (!$("#statemachineeditor").length)
+                if (!$("#statemachineeditor").length) {
                     $("#timeline").prepend(Object(_state_machine__WEBPACK_IMPORTED_MODULE_6__["registerStatePanel"])())
+                    Object(_state_machine__WEBPACK_IMPORTED_MODULE_6__["startGraph"])();
+                }
+                $("#statemachineeditor").hide()
+                console.log("Loaded Geckolib")
                 BARS.defineActions(new Mode({
                     id: 'state_machine',
                     name: 'State Machine',
@@ -929,7 +933,6 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
                         Animator.leave()
                     }
                 }))
-                Object(_state_machine__WEBPACK_IMPORTED_MODULE_6__["startGraph"])();
                 Modes.vue.$forceUpdate();
                 exportAction = new Action({
                     id: "export_geckolib_model",
@@ -943,7 +946,7 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
                         _codec__WEBPACK_IMPORTED_MODULE_8__["default"].export();
                     },
                 });
-                /*createStateAction = new Action({
+                createStateAction = new Action({
                     id: "create_state_node",
                     name: "Create Animation Node",
                     icon: "archive",
@@ -951,9 +954,9 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
                         "Create an animation node",
                     condition: () => Modes.selected.id === "state_machine",
                     click: function () {
-                        let node_const = LiteGraph.createNode("animation/state");
-                        node_const.pos = position;
-                        graph.add(node_const);
+                        let node_const = litegraph_js__WEBPACK_IMPORTED_MODULE_9__["LiteGraph"].createNode("animation/state");
+                        node_const.pos = _state_machine__WEBPACK_IMPORTED_MODULE_6__["position"];
+                        _state_machine__WEBPACK_IMPORTED_MODULE_6__["graph"].add(node_const);
                         console.log("node")
                     },
                 });
@@ -967,7 +970,7 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
                     click: function () {
                         //codec.export();
                     },
-                });*/
+                });
                 MenuBar.addAction(exportAction, "file.export");
 
                 exportDisplayAction = new Action({
@@ -1023,6 +1026,7 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
                 Object(_codec__WEBPACK_IMPORTED_MODULE_8__["unloadCodec"])();
                 Object(_utils__WEBPACK_IMPORTED_MODULE_4__["removeMonkeypatches"])();
                 $("#statemachineeditor").remove();
+                _state_machine__WEBPACK_IMPORTED_MODULE_6__["canvas"].getCanvasWindow().document.removeEventListener("keydown", _state_machine__WEBPACK_IMPORTED_MODULE_6__["canvas"]._key_callback)
                 console.clear(); // eslint-disable-line no-console
             },
         }
@@ -36287,11 +36291,17 @@ function startGraph() {
         console.log(inputIndex, type, outputSlot)
         return true;
     }
-    /*$("#editor").on("contextmenu", (event) => {
-        console.log(event)
+    $("#editor").on("contextmenu", (event) => {
         stateMenu.show(event)
         position = [event.offsetX, event.offsetY]
-    })*/
+    })
+
+    $("#editor").on("click", (event) => {
+        stateMenu.hide()
+        position = [event.offsetX, event.offsetY]
+    })
+    console.log("added listeners")
+    canvas.getCanvasWindow().addEventListener("keydown", canvas._key_callback, true)
 }
 
 function registerStatePanel() {
