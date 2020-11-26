@@ -13,15 +13,28 @@ export function startGraph() {
     canvas = new LGraphCanvas("#editor", graph);
     canvas.renderInfo = () => {
     };
-    canvas.prompt = () => {};
+    canvas.prompt = () => {
+    };
     canvas.allow_searchbox = false;
     graph.start()
     LiteGraph.registerNodeType("geckolib/AnimationClip", AnimationClip);
     LiteGraph.registerNodeType("geckolib/Blend2", AnimationBlend2);
 
-    var node_const = LiteGraph.createNode("graph/output");
-    node_const.pos = [200,200];
-    graph.add(node_const);
+    var output = LiteGraph.createNode("graph/output");
+    output.pos = [200, 200];
+    output.onExecute = function () {
+        if (Modes.selected.id !== "state_machine") {
+            return;
+        }
+        let inputData = this.getInputData(0, false);
+        Animator.showDefaultPose(true);
+        if (inputData) {
+            inputData.forEach(x => {
+                displayFrame(x);
+            })
+        }
+    }
+    graph.add(output);
 
     $("#editor").on("contextmenu", (event) => {
         stateMenu.show(event)
@@ -35,7 +48,9 @@ export function startGraph() {
     console.log("added listeners")
     canvas.getCanvasWindow().addEventListener("keydown", event => {
         console.log(event);
-        canvas._key_callback(event)
+        if (Modes.selected.id == "state_machine") {
+            canvas._key_callback(event)
+        }
     }, true)
 }
 
@@ -46,7 +61,16 @@ export function registerStatePanel() {
     `
 }
 
+function displayFrame(group, multiplier = 1) {
+    if (!group.group.doRender()) return;
+    group.group.getGroup()
+    console.log(group.position)
+    if (!group.group.muted.rotation) group.group.displayRotation(group.rotation, multiplier)
+    if (!group.group.muted.position) group.group.displayPosition(group.position, multiplier)
+    if (!group.group.muted.scale) group.group.displayScale(group.scale, multiplier)
+}
+
 const stateMenu = new Menu([
     'create_state_node',
-    'create_transition_node'
+    'create_blend_node'
 ]);

@@ -16,7 +16,7 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
 
 (function () {
     let createStateAction;
-    let createTransitionAction;
+    let createBlendAction;
     let exportAction;
     let exportDisplayAction;
     let button;
@@ -93,6 +93,7 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                         $("#timeline_vue").show()
                         $("#statemachineeditor").hide()
                         Animator.leave()
+                        Timeline.time = 0;
                     }
                 }))
                 Modes.vue.$forceUpdate();
@@ -119,18 +120,19 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
                         let node_const = LiteGraph.createNode("geckolib/AnimationClip");
                         node_const.pos = position;
                         graph.add(node_const);
-                        console.log("node")
                     },
                 });
-                createTransitionAction = new Action({
-                    id: "create_transition_node",
-                    name: "Create Transition Node",
+                createBlendAction = new Action({
+                    id: "create_blend_node",
+                    name: "Create Blend Node",
                     icon: "archive",
                     description:
-                        "Create an transition node",
+                        "Create a blend node",
                     condition: () => Modes.selected.id === "state_machine",
                     click: function () {
-                        //codec.export();
+                        let node_const = LiteGraph.createNode("geckolib/Blend2");
+                        node_const.pos = position;
+                        graph.add(node_const);
                     },
                 });
                 MenuBar.addAction(exportAction, "file.export");
@@ -179,7 +181,7 @@ if (!semverSatisfies(semverCoerce(Blockbench.version), SUPPORTED_BB_VERSION_RANG
             },
             onunload() {
                 createStateAction.delete();
-                createTransitionAction.delete();
+                createBlendAction.delete();
                 exportAction.delete();
                 exportDisplayAction.delete();
                 button.delete();

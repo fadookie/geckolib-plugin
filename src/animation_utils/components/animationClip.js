@@ -31,7 +31,6 @@ class AnimationClip extends LGraphNode {
 
 AnimationClip.title = "Animation Clip";
 AnimationClip.desc = "Animation Clip";
-AnimationClip.values = ["animator1", "animator2"];
 
 AnimationClip.prototype.setValue = function (v) {
     this.setProperty("loop", v);
@@ -69,7 +68,7 @@ AnimationClip.prototype.onExecute = function () {
     }
 
     // Cull processing for un-retained nodes
-    if (this._refs.size > 0 || !this._skeleton) {
+    if (true || !this._skeleton) {
         let seekTimeNorm = this._seekTime / duration;
         // Clamp/wrap if needed
         if (seekTimeNorm > 1) {
@@ -81,12 +80,11 @@ AnimationClip.prototype.onExecute = function () {
             }
         }
 
-        this._skeleton = getLerpedSkeleton(animators[this.properties.CLIP], seekTimeNorm, this.title);
+        this._skeleton = getLerpedSkeleton(Animator.animations.find(x => x.name === this.properties.CLIP), seekTimeNorm, this.title);
     }
     this.setOutputData(0, this._skeleton);
 
     if (!this.isOutputConnected(0)) {
-        this.setCulled(true);
     }
 };
 
@@ -100,7 +98,6 @@ AnimationClip.prototype.onConnectionsChange = function (
     if (this.isOutputConnected(0)) {
         if (this._playState === STATE_PAUSED) this.play();
     } else {
-        this.setCulled(true);
     }
 }
 

@@ -111,63 +111,85 @@ __webpack_require__.r(__webpack_exports__);
 const animators = {};
 let p5;
 
-const makeKeyframe = (x, y, r = 0) => ({ v: p5.createVector(x, y), r });
+const makeKeyframe = (x, y, r = 0) => ({v: p5.createVector(x, y), r});
 
 const init = p => {
-  p5 = p;
-  p5__WEBPACK_IMPORTED_MODULE_1__["Vector"].prototype.toJSON = function() {
-    return lodash_pick__WEBPACK_IMPORTED_MODULE_0___default()(this, ['x', 'y', 'z']);
-  };
+    p5 = p;
+    p5__WEBPACK_IMPORTED_MODULE_1__["Vector"].prototype.toJSON = function () {
+        return lodash_pick__WEBPACK_IMPORTED_MODULE_0___default()(this, ['x', 'y', 'z']);
+    };
 
-  animators.animator1 = { 
-    bone1: [makeKeyframe(120, 20),    makeKeyframe(120, 60, 45),    makeKeyframe(120, 20)],
-    bone2: [makeKeyframe(40, 40, 0),  makeKeyframe(120, 120, 90),   makeKeyframe(40, 40, 0)],
-    bone3: [makeKeyframe(40, 40),     makeKeyframe(120, 120),       makeKeyframe(40, 40)],
-  };
-  
-  animators.animator2 = { 
-    bone1: [makeKeyframe(120, 20),    makeKeyframe(200, 20, 45),    makeKeyframe(120, 20)],
-    bone2: [makeKeyframe(40, 40, 0),  makeKeyframe(40, 40, -45),    makeKeyframe(40, 40, 0)],
-    bone3: [makeKeyframe(40, 40),     makeKeyframe(40, 40),         makeKeyframe(40, 40)]
-  };
-  
+    animators.animator1 = {
+        bone1: [makeKeyframe(120, 20), makeKeyframe(120, 60, 45), makeKeyframe(120, 20)],
+        bone2: [makeKeyframe(40, 40, 0), makeKeyframe(120, 120, 90), makeKeyframe(40, 40, 0)],
+        bone3: [makeKeyframe(40, 40), makeKeyframe(120, 120), makeKeyframe(40, 40)],
+    };
+
+    animators.animator2 = {
+        bone1: [makeKeyframe(120, 20), makeKeyframe(200, 20, 45), makeKeyframe(120, 20)],
+        bone2: [makeKeyframe(40, 40, 0), makeKeyframe(40, 40, -45), makeKeyframe(40, 40, 0)],
+        bone3: [makeKeyframe(40, 40), makeKeyframe(40, 40), makeKeyframe(40, 40)]
+    };
+
 };
 
 const duration = 3;
 
 const lerpKeyframe = (a, b, t) => {
-  const vec = p5__WEBPACK_IMPORTED_MODULE_1__["Vector"].lerp(a.v, b.v, t);
-  return makeKeyframe(vec.x, vec.y, p5.lerp(a.r, b.r, t));
+    if (!a && b) {
+        return b;
+    }
+    if (a && !b) {
+        return a;
+    }
+    if (!a && !b) {
+        return false;
+    }
+    return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+}
+
+function lerp(start, stop, amt) {
+    return amt * (stop - start) + start;
 }
 
 // let lastAnim2FromIndex = null;
 
-const getLerpedSkeleton = (animator, t, debugTitle) => {
-  const numFrames = animator.bone1.length;
-  const frameLength = duration / numFrames;
-  const timeS = t * (numFrames - 1);
-  const fromIndex = Math.floor(timeS);
-  const fromIndexFloor = Math.min(fromIndex, numFrames - 1);
-  const toIndex = (fromIndexFloor + 1)  % numFrames;
-  const timeIntoFrameS = timeS - (fromIndex * frameLength)
-  const timeIntoFrameNorm = timeIntoFrameS / frameLength;
-  const res = {
-    bone1: lerpKeyframe(animator.bone1[fromIndexFloor], animator.bone1[toIndex], timeIntoFrameNorm),
-    bone2: lerpKeyframe(animator.bone2[fromIndexFloor], animator.bone2[toIndex], timeIntoFrameNorm),
-    bone3: lerpKeyframe(animator.bone3[fromIndexFloor], animator.bone3[toIndex], timeIntoFrameNorm),    
-  };
-  // if (debugTitle === 'Animation Clip 2')  {
-  //   console.log('@@@ getLerpedSkeleton', { t, timeIntoFrameNorm, lastAnim2FromIndex, fromIndex, toIndex }, 'res:', res);
-  // }
-  return res;
+const getLerpedSkeleton = (animation, t, debugTitle) => {
+    Timeline.time = t * animation.length;
+    console.log(Timeline.time)
+    return Group.all.map(group => {
+        return {
+            "group": animation.getBoneAnimator(group),
+            "scale": animation.getBoneAnimator(group).interpolate('scale'),
+            "rotation": animation.getBoneAnimator(group).interpolate('rotation'),
+            "position": animation.getBoneAnimator(group).interpolate('position'),
+        }
+    });
 };
 
 // TODO: blend to buffer
-const blendSkeletons = (a, b, weight) => ({
-  bone1: lerpKeyframe(a.bone1, b.bone1, weight),
-  bone2: lerpKeyframe(a.bone2, b.bone2, weight),
-  bone3: lerpKeyframe(a.bone3, b.bone3, weight),    
-});
+const blendSkeletons = (a, b, weight) => {
+    let blendedBones = a.map(x => {
+        let matching = b.find(y => y.group.uuid == x.group.uuid);
+        if (matching) {
+            return {
+                "group": x.group,
+                "scale": lerpKeyframe(x.scale, matching.scale, weight),
+                "rotation": lerpKeyframe(x.rotation, matching.rotation, weight),
+                "position": lerpKeyframe(x.position, matching.position, weight)
+            }
+        }
+        return x;
+    });
+
+    b.forEach(x => {
+        let matching = a.find(y => y.group.uuid == x.group.uuid);
+        if (!matching || !blendedBones.some(bone => bone.group.uuid == matching.group.uuid)) {
+            blendedBones.push(matching);
+        }
+    })
+    return blendedBones;
+};
 
 
 /***/ }),
@@ -577,69 +599,71 @@ __webpack_require__.r(__webpack_exports__);
 
 
 //your node constructor class
-function AnimationBlend2()
-{
-  //add some input slots
-  this.addInput("In","skeleton");
-  this.addInput("Blend","skeleton");
-  //add some output slots
-  this.addOutput("Out","skeleton");
-  //add some properties
-  this.addProperty("weight", 0.5);
-  this.widget = this.addWidget("slider","weight", this.properties.weight, v => this.setProperty('weight', v), { min: 0, max: 1, property: "weight" });
-  // this.widgets_up = true;
-  this._isPlaying = false;
+function AnimationBlend2() {
+    //add some input slots
+    this.addInput("In", "skeleton");
+    this.addInput("Blend", "skeleton");
+    //add some output slots
+    this.addOutput("Out", "skeleton");
+    //add some properties
+    this.addProperty("weight", 0.5);
+    this.widget = this.addWidget("slider", "weight", this.properties.weight, v => this.setProperty('weight', v), {
+        min: 0,
+        max: 1,
+        property: "weight"
+    });
+    // this.widgets_up = true;
+    this._isPlaying = false;
 }
 
 //name to show on the canvas
 AnimationBlend2.title = "Blend 2";
 
 //function to call when the node is executed
-AnimationBlend2.prototype.onExecute = function()
-{
-  // console.log(`@@@ AnimationBlend2[${this.title}] onExecute 1`);
-  //retrieve data from inputs
-  var A = this.getInputData(0);
-  if( A === undefined ) return;
-  var B = this.getInputData(1);
-  if( B === undefined ) return;
-  //assing data to otputs
-  this.setOutputData( 0, Object(_animationData__WEBPACK_IMPORTED_MODULE_1__["blendSkeletons"])(A, B, this.properties.weight) );
+AnimationBlend2.prototype.onExecute = function () {
+    // console.log(`@@@ AnimationBlend2[${this.title}] onExecute 1`);
+    //retrieve data from inputs
+    var A = this.getInputData(0);
+    if (A === undefined) return;
+    var B = this.getInputData(1);
+    if (B === undefined) return;
+    //assing data to otputs
+    this.setOutputData(0, Object(_animationData__WEBPACK_IMPORTED_MODULE_1__["blendSkeletons"])(A, B, this.properties.weight));
 
-  // Cull graph, pause insignificant nodes
-  // TODO make this recursive and generic
-  // and maybe it's easier to do this as lookahead instead of lookbehind
-  // So multiple children can be taken into account, giving each node a playing state incl. blends
-  // Or just keep lookbehind but use reference counting
-  const shallowAncestors = this.inputs.map(input =>
-    this.graph.getNodeById(this.graph.links[input.link].origin_id));
-  if (shallowAncestors[0] === shallowAncestors[1]) return; // someone is blending the same node with itself?
+    // Cull graph, pause insignificant nodes
+    // TODO make this recursive and generic
+    // and maybe it's easier to do this as lookahead instead of lookbehind
+    // So multiple children can be taken into account, giving each node a playing state incl. blends
+    // Or just keep lookbehind but use reference counting
+    const shallowAncestors = this.inputs.map(input =>
+        this.graph.getNodeById(this.graph.links[input.link].origin_id));
+    if (shallowAncestors[0] === shallowAncestors[1]) return; // someone is blending the same node with itself?
 
-  // There are some precision errors with properties it seems, so use approx math
-  if (Object(float__WEBPACK_IMPORTED_MODULE_2__["lessThanOrEquals"])(this.properties.weight,0)) {
-    if(shallowAncestors[1].release) {
-      lodash_invoke__WEBPACK_IMPORTED_MODULE_0___default()(shallowAncestors[1], 'release', this); // TODO Should recursively update ancestors
+    // There are some precision errors with properties it seems, so use approx math
+    if (Object(float__WEBPACK_IMPORTED_MODULE_2__["lessThanOrEquals"])(this.properties.weight, 0)) {
+        if (shallowAncestors[1].release) {
+            lodash_invoke__WEBPACK_IMPORTED_MODULE_0___default()(shallowAncestors[1], 'release', this); // TODO Should recursively update ancestors
+        } else {
+            //TODO recur
+        }
+        lodash_invoke__WEBPACK_IMPORTED_MODULE_0___default()(shallowAncestors[0], 'retain', this);
+    } else if (Object(float__WEBPACK_IMPORTED_MODULE_2__["greaterThanOrEquals"])(this.properties.weight, 1)) {
+        if (shallowAncestors[0].retain) {
+            lodash_invoke__WEBPACK_IMPORTED_MODULE_0___default()(shallowAncestors[0], 'release', this); // TODO Should recursively update ancestors
+        } else {
+            //TODO recur
+        }
+        lodash_invoke__WEBPACK_IMPORTED_MODULE_0___default()(shallowAncestors[1], 'retain', this);
     } else {
-      //TODO recur
+        lodash_invoke__WEBPACK_IMPORTED_MODULE_0___default()(shallowAncestors[0], 'retain', this);
+        lodash_invoke__WEBPACK_IMPORTED_MODULE_0___default()(shallowAncestors[1], 'retain', this);
+        //TODO recur
     }
-    lodash_invoke__WEBPACK_IMPORTED_MODULE_0___default()(shallowAncestors[0], 'retain', this);
-  } else if (Object(float__WEBPACK_IMPORTED_MODULE_2__["greaterThanOrEquals"])(this.properties.weight, 1)) {
-    if(shallowAncestors[0].retain) {
-      lodash_invoke__WEBPACK_IMPORTED_MODULE_0___default()(shallowAncestors[0], 'release', this); // TODO Should recursively update ancestors
-    } else {
-      //TODO recur
-    }
-    lodash_invoke__WEBPACK_IMPORTED_MODULE_0___default()(shallowAncestors[1], 'retain', this);
-  } else {
-    lodash_invoke__WEBPACK_IMPORTED_MODULE_0___default()(shallowAncestors[0], 'retain', this);
-    lodash_invoke__WEBPACK_IMPORTED_MODULE_0___default()(shallowAncestors[1], 'retain', this);
-    //TODO recur
-  }
 }
 
-AnimationBlend2.prototype.onPropertyChanged = function(name, value) {
-  const widget = this.widgets.find(w => w.options.property == name);
-  if (widget) widget.value = value;
+AnimationBlend2.prototype.onPropertyChanged = function (name, value) {
+    const widget = this.widgets.find(w => w.options.property == name);
+    if (widget) widget.value = value;
 }
 
 /* harmony default export */ __webpack_exports__["default"] = (AnimationBlend2);
@@ -691,7 +715,6 @@ class AnimationClip extends litegraph_js__WEBPACK_IMPORTED_MODULE_1__["LGraphNod
 
 AnimationClip.title = "Animation Clip";
 AnimationClip.desc = "Animation Clip";
-AnimationClip.values = ["animator1", "animator2"];
 
 AnimationClip.prototype.setValue = function (v) {
     this.setProperty("loop", v);
@@ -729,7 +752,7 @@ AnimationClip.prototype.onExecute = function () {
     }
 
     // Cull processing for un-retained nodes
-    if (this._refs.size > 0 || !this._skeleton) {
+    if (true) {
         let seekTimeNorm = this._seekTime / _animationData__WEBPACK_IMPORTED_MODULE_0__["duration"];
         // Clamp/wrap if needed
         if (seekTimeNorm > 1) {
@@ -741,12 +764,11 @@ AnimationClip.prototype.onExecute = function () {
             }
         }
 
-        this._skeleton = Object(_animationData__WEBPACK_IMPORTED_MODULE_0__["getLerpedSkeleton"])(_animationData__WEBPACK_IMPORTED_MODULE_0__["animators"][this.properties.CLIP], seekTimeNorm, this.title);
+        this._skeleton = Object(_animationData__WEBPACK_IMPORTED_MODULE_0__["getLerpedSkeleton"])(Animator.animations.find(x => x.name === this.properties.CLIP), seekTimeNorm, this.title);
     }
     this.setOutputData(0, this._skeleton);
 
     if (!this.isOutputConnected(0)) {
-        this.setCulled(true);
     }
 };
 
@@ -760,7 +782,6 @@ AnimationClip.prototype.onConnectionsChange = function (
     if (this.isOutputConnected(0)) {
         if (this._playState === STATE_PAUSED) this.play();
     } else {
-        this.setCulled(true);
     }
 }
 
@@ -1213,7 +1234,7 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
 
 (function () {
     let createStateAction;
-    let createTransitionAction;
+    let createBlendAction;
     let exportAction;
     let exportDisplayAction;
     let button;
@@ -1290,6 +1311,7 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
                         $("#timeline_vue").show()
                         $("#statemachineeditor").hide()
                         Animator.leave()
+                        Timeline.time = 0;
                     }
                 }))
                 Modes.vue.$forceUpdate();
@@ -1316,18 +1338,19 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
                         let node_const = litegraph_js__WEBPACK_IMPORTED_MODULE_9__["LiteGraph"].createNode("geckolib/AnimationClip");
                         node_const.pos = _stateMachine__WEBPACK_IMPORTED_MODULE_6__["position"];
                         _stateMachine__WEBPACK_IMPORTED_MODULE_6__["graph"].add(node_const);
-                        console.log("node")
                     },
                 });
-                createTransitionAction = new Action({
-                    id: "create_transition_node",
-                    name: "Create Transition Node",
+                createBlendAction = new Action({
+                    id: "create_blend_node",
+                    name: "Create Blend Node",
                     icon: "archive",
                     description:
-                        "Create an transition node",
+                        "Create a blend node",
                     condition: () => Modes.selected.id === "state_machine",
                     click: function () {
-                        //codec.export();
+                        let node_const = litegraph_js__WEBPACK_IMPORTED_MODULE_9__["LiteGraph"].createNode("geckolib/Blend2");
+                        node_const.pos = _stateMachine__WEBPACK_IMPORTED_MODULE_6__["position"];
+                        _stateMachine__WEBPACK_IMPORTED_MODULE_6__["graph"].add(node_const);
                     },
                 });
                 MenuBar.addAction(exportAction, "file.export");
@@ -1376,7 +1399,7 @@ if (!semver_functions_satisfies__WEBPACK_IMPORTED_MODULE_1___default()(semver_fu
             },
             onunload() {
                 createStateAction.delete();
-                createTransitionAction.delete();
+                createBlendAction.delete();
                 exportAction.delete();
                 exportDisplayAction.delete();
                 button.delete();
@@ -37098,15 +37121,28 @@ function startGraph() {
     canvas = new litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LGraphCanvas"]("#editor", graph);
     canvas.renderInfo = () => {
     };
-    canvas.prompt = () => {};
+    canvas.prompt = () => {
+    };
     canvas.allow_searchbox = false;
     graph.start()
     litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LiteGraph"].registerNodeType("geckolib/AnimationClip", _components_animationClip__WEBPACK_IMPORTED_MODULE_1__["default"]);
     litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LiteGraph"].registerNodeType("geckolib/Blend2", _components_AnimationBlend2__WEBPACK_IMPORTED_MODULE_2__["default"]);
 
-    var node_const = litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LiteGraph"].createNode("graph/output");
-    node_const.pos = [200,200];
-    graph.add(node_const);
+    var output = litegraph_js__WEBPACK_IMPORTED_MODULE_0__["LiteGraph"].createNode("graph/output");
+    output.pos = [200, 200];
+    output.onExecute = function () {
+        if (Modes.selected.id !== "state_machine") {
+            return;
+        }
+        let inputData = this.getInputData(0, false);
+        Animator.showDefaultPose(true);
+        if (inputData) {
+            inputData.forEach(x => {
+                displayFrame(x);
+            })
+        }
+    }
+    graph.add(output);
 
     $("#editor").on("contextmenu", (event) => {
         stateMenu.show(event)
@@ -37120,7 +37156,9 @@ function startGraph() {
     console.log("added listeners")
     canvas.getCanvasWindow().addEventListener("keydown", event => {
         console.log(event);
-        canvas._key_callback(event)
+        if (Modes.selected.id == "state_machine") {
+            canvas._key_callback(event)
+        }
     }, true)
 }
 
@@ -37131,9 +37169,18 @@ function registerStatePanel() {
     `
 }
 
+function displayFrame(group, multiplier = 1) {
+    if (!group.group.doRender()) return;
+    group.group.getGroup()
+    console.log(group.position)
+    if (!group.group.muted.rotation) group.group.displayRotation(group.rotation, multiplier)
+    if (!group.group.muted.position) group.group.displayPosition(group.position, multiplier)
+    if (!group.group.muted.scale) group.group.displayScale(group.scale, multiplier)
+}
+
 const stateMenu = new Menu([
     'create_state_node',
-    'create_transition_node'
+    'create_blend_node'
 ]);
 
 /***/ }),
