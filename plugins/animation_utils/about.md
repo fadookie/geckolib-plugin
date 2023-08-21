@@ -1,0 +1,1 @@
+Create animated blocks, items, entity, and armor for Java Edition mods using the [GeckoLib library and plugin](https://github.com/bernie-g/geckolib/wiki).
